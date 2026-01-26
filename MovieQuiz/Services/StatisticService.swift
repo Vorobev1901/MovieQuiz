@@ -7,21 +7,29 @@
 
 import Foundation
 
+// Сервис для хранения и получения статистики игр квиза
+// Использует UserDefaults для постоянного хранения данных между запусками приложения
 final class StatisticService {
+    
+    /// UserDefaults для сохранения данных
     private let storage: UserDefaults = .standard
     
+    /// Ключи для хранения разных показателей статистики в UserDefaults
     private enum Keys: String {
-        case gamesCount          // Для счётчика сыгранных игр
-        case bestGameCorrect     // Для количества правильных ответов в лучшей игре
-        case bestGameTotal       // Для общего количества вопросов в лучшей игре
-        case bestGameDate        // Для даты лучшей игры
-        case totalCorrectAnswers // Для общего количества правильных ответов за все игры
-        case totalQuestionsAsked // Для общего количества вопросов, заданных за все игры
+        case gamesCount          // Счётчик сыгранных игр
+        case bestGameCorrect     // Количество правильных ответов в лучшей игре
+        case bestGameTotal       // Общее количество вопросов в лучшей игре
+        case bestGameDate        // Дата лучшей игры
+        case totalCorrectAnswers // Общее количество правильных ответов за все игры
+        case totalQuestionsAsked // Общее количество вопросов за все игры
     }
 }
 
+// MARK: - Реализация протокола StatisticServiceProtocol
+
 extension StatisticService: StatisticServiceProtocol {
     
+    /// Количество сыгранных игр
     var gamesCount: Int {
         get {
             storage.integer(forKey: Keys.gamesCount.rawValue)
@@ -31,6 +39,7 @@ extension StatisticService: StatisticServiceProtocol {
         }
     }
     
+    /// Общее количество правильных ответов за все игры
     private var totalCorrectAnswers: Int {
         get {
             storage.integer(forKey: Keys.totalCorrectAnswers.rawValue)
@@ -40,6 +49,7 @@ extension StatisticService: StatisticServiceProtocol {
         }
     }
 
+    /// Общее количество заданных вопросов за все игры
     private var totalQuestionsAsked: Int {
         get {
             storage.integer(forKey: Keys.totalQuestionsAsked.rawValue)
@@ -49,6 +59,7 @@ extension StatisticService: StatisticServiceProtocol {
         }
     }
     
+    /// Информация о лучшей игре
     var bestGame: GameResult {
         get {
             let correct = storage.integer(forKey: Keys.bestGameCorrect.rawValue)
@@ -64,24 +75,32 @@ extension StatisticService: StatisticServiceProtocol {
         }
     }
     
+    /// Общая точность всех игр в процентах
     var totalAccuracy: Double {
-        
+        // Если ещё не было вопросов, точность = 0
         if totalQuestionsAsked == 0 {
             return 0
         } else {
+            // accuracy = (правильные ответы / всего вопросов) * 100
             let accuracy = Double(totalCorrectAnswers) / Double(totalQuestionsAsked) * 100
             return accuracy
         }
-        
     }
     
+    /// Сохраняет результаты текущей игры
+    /// - Parameters:
+    ///   - count: количество правильных ответов
+    ///   - amount: общее количество вопросов
     func store(correct count: Int, total amount: Int) {
+        // Увеличиваем общую статистику
         totalCorrectAnswers += count
         totalQuestionsAsked += amount
         gamesCount += 1
         
+        // Создаём объект результата текущей игры
         let gameResult = GameResult(correct: count, total: amount, date: Date())
         
+        // Если эта игра лучше предыдущей лучшей, обновляем bestGame
         if gameResult.isBetterThan(bestGame) {
             bestGame = gameResult
         }

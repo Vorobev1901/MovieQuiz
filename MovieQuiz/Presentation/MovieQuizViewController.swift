@@ -3,76 +3,70 @@ import UIKit
 
 final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
-    @IBOutlet weak private var counterLabel: UILabel!
+    // MARK: - Outlets
     
-    @IBOutlet weak private var textLabel: UILabel!
+    @IBOutlet weak private var counterLabel: UILabel!       // Показывает номер текущего вопроса
+    @IBOutlet weak private var textLabel: UILabel!          // Отображает текст вопроса
+    @IBOutlet weak private var imageView: UIImageView!      // Картинка фильма для вопроса
+    @IBOutlet weak private var noButton: UIButton!          // Кнопка "Нет"
+    @IBOutlet weak private var yesButton: UIButton!         // Кнопка "Да"
     
-    @IBOutlet weak private var imageView: UIImageView!
+    // MARK: - Private properties
     
-    @IBOutlet weak private var noButton: UIButton!
+    private var currentQuestionIndex = 0                    // Индекс текущего вопроса
+    private var correctAnswers = 0                          // Счётчик правильных ответов в раунде
+    private var questionsAmount: Int = 10                   // Общее количество вопросов в раунде
     
-    @IBOutlet weak private var yesButton: UIButton!
-    
-    private var currentQuestionIndex = 0
-    
-    private var correctAnswers = 0
-    
-    private var questionsAmount: Int = 10
-    
-    private var questionFactory: QuestionFactoryProtocol?
-    
-    private var statisticService: StatisticServiceProtocol?
-    
-    private var alertPresenter = AlertPresenter()
-    
-    private var currentQuestion: QuizQuestion?
+    private var questionFactory: QuestionFactoryProtocol?   // Фабрика вопросов
+    private var statisticService: StatisticServiceProtocol? // Сервис статистики
+    private var alertPresenter = AlertPresenter()           // Отвечает за показ алертов
+    private var currentQuestion: QuizQuestion?              // Текущий вопрос
     
     // MARK: - Lifecycle
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // Скругление углов картинки и кнопок
         imageView.layer.masksToBounds = true
         imageView.layer.cornerRadius = 20
-        
         noButton.layer.cornerRadius = 15
         yesButton.layer.cornerRadius = 15
         
+        // Настройка фабрики вопросов и установка делегата
         let questionFactory = QuestionFactory()
         questionFactory.delegate = self
         self.questionFactory = questionFactory
         
+        // Инициализация сервиса статистики
         statisticService = StatisticService()
         
+        // Запрос первого вопроса
         self.questionFactory?.requestNextQuestion()
-        
-        let allValues = UserDefaults.standard.dictionaryRepresentation()
-        
-        for (key, value) in allValues {
-            print("\(key): \(value)")
-        }
     }
     
     // MARK: - QuestionFactoryDelegate
     
+    // Делегатный метод фабрики вопросов: вызывается при получении нового вопроса
     func didReceiveNextQuestion(question: QuizQuestion?) {
-  
-        guard let question = question else {
-            return
-        }
+        guard let question = question else { return }
         
         currentQuestion = question
-        let viewModel = convert(model: question)
+        let viewModel = convert(model: question) // Конвертация модели вопроса в вью-модель
         
+        // Обновление UI на главном потоке
         DispatchQueue.main.async { [weak self] in
             self?.show(quiz: viewModel)
         }
     }
     
+    // MARK: - Actions
+    
     @IBAction private func noButtonClicked(_ sender: UIButton) {
         guard let currentQuestion = currentQuestion else {
             return
         }
-        
+        // Проверяем ответ: "Нет" правильный, если текущий вопрос имеет correctAnswer == false
         showAnswerResult(isCorrect: !currentQuestion.correctAnswer)
     }
     
@@ -80,11 +74,13 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         guard let currentQuestion = currentQuestion else {
             return
         }
-        
+        // Проверяем ответ: "Да" правильный, если текущий вопрос имеет correctAnswer == true
         showAnswerResult(isCorrect: currentQuestion.correctAnswer)
     }
     
-    // метод конвертации, который принимает моковый вопрос и возвращает вью модель для экрана вопроса
+    // MARK: - Private Methods
+    
+    // Конвертация модели QuizQuestion в QuizStepViewModel для UI
     private func convert(model: QuizQuestion) -> QuizStepViewModel {
         
         let questionStep = QuizStepViewModel(
@@ -96,18 +92,20 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         return questionStep
     }
     
-    // приватный метод вывода на экран вопроса, который принимает на вход вью модель вопроса и ничего не возвращает
+    // Показ вопроса на экране
     private func show(quiz step: QuizStepViewModel) {
         counterLabel.text = step.questionNumber
         textLabel.text = step.question
         imageView.image = step.image
         
-        // удаление рамки у картинки
+        // Сбрасываем рамку у картинки
         imageView.layer.borderWidth = 0
+        // Включаем кнопки для следующего ответа
         yesButton.isEnabled = true
         noButton.isEnabled = true
     }
     
+    // Показ результата квиза (алерт)
     private func show(quiz result: QuizResultsViewModel) {
 
         let model = AlertModel(
@@ -117,39 +115,49 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         ) { [weak self] in
             guard let self = self else { return }
             
+            // Сброс состояния раунда
             self.currentQuestionIndex = 0
             self.correctAnswers = 0
             
+            // Начало нового раунда
             self.questionFactory?.requestNextQuestion()
         }
         
         alertPresenter.show(in: self, model: model)
     }
     
+    // Обработка ответа пользователя
     private func showAnswerResult(isCorrect: Bool) {
+        // Показываем рамку: зеленая для правильного, красная для неправильного
         imageView.layer.borderWidth = 8
         imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
         
+        // Отключаем кнопки до следующего вопроса
         yesButton.isEnabled = false
         noButton.isEnabled = false
         
+        // Увеличиваем счётчик правильных ответов
         if isCorrect {
             self.correctAnswers += 1
         }
         
+        // Переход к следующему вопросу через 1 секунду
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             guard let self = self else { return }
             self.showNextQuestionOrResults()
         }
     }
     
+    // Логика перехода: следующий вопрос или конец раунда
     private func showNextQuestionOrResults() {
       if currentQuestionIndex == questionsAmount - 1 {
- 
+          // Конец раунда
           guard let statisticService else { return }
           
+          // Сохраняем результаты текущего раунда
           statisticService.store(correct: correctAnswers, total: questionsAmount)
           
+          // Формируем текст для алерта
           let text = """
             Ваш результат: \(correctAnswers)/\(questionsAmount)
             Количество сыгранных квизов: \(statisticService.gamesCount)
@@ -164,9 +172,8 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
           )
           show(quiz: viewModel)
       } else {
-          // идём в состояние "Вопрос показан"
+          // Переход к следующему вопросу
           currentQuestionIndex += 1
-
           self.questionFactory?.requestNextQuestion()
       }
         
