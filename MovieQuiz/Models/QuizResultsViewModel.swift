@@ -7,11 +7,13 @@
 
 import Foundation
 
+/// ViewModel для отображения результат квиза
 struct QuizResultsViewModel {
-  // строка с заголовком алерта
-  let title: String
-  // строка с текстом о количестве набранных очков
-  let text: String
-  // текст для кнопки алерта
-  let buttonText: String
+    /// Заголовок алерта
+    let title: String
+    /// Основной текст алерта с результатами раунда
+    let text: String
+    /// Текст кнопки действия в алерте
+    let buttonText: String
 }
+

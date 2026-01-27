@@ -7,8 +7,13 @@
 
 import Foundation
 
+/// Модель вопроса квиза
 struct QuizQuestion {
+    /// Имя картинки с постером фильма
     let imageName: String
+    /// Текст вопроса
     let text: String
+    /// Правильный ответ на вопрос
     let correctAnswer: Bool
 }
+
