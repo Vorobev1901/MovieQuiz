@@ -20,6 +20,9 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     /// Кнопка "Да"
     @IBOutlet weak private var yesButton: UIButton!
     
+    /// Индикатор загрузки фильмов
+    @IBOutlet weak private var activityIndicator: UIActivityIndicatorView!
+    
     
     // MARK: - Private properties
     
@@ -50,9 +53,12 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        activityIndicator.hidesWhenStopped = true
         configureUI()
         setupServices()
-        startGame()
+        
+        showLoadingIndicator()
+        questionFactory?.loadData()
     }
     
     
@@ -69,9 +75,11 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     /// Инициализирует сервисы и зависимости
     private func setupServices() {
-        let questionFactory = QuestionFactory()
-        questionFactory.delegate = self
-        self.questionFactory = questionFactory
+        let moviesLoader = MoviesLoader()
+        questionFactory = QuestionFactory(
+            moviesLoader: moviesLoader,
+            delegate: self
+        )
         
         statisticService = StatisticService()
     }
@@ -92,10 +100,20 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         
         // Обновление UI на главном потоке
         DispatchQueue.main.async { [weak self] in
-            self?.show(quiz: viewModel)
+            guard let self = self else { return }
+            self.hideLoadingIndicator()
+            self.show(quiz: viewModel)
         }
     }
     
+    func didLoadDataFromServer() {
+        hideLoadingIndicator()
+        startGame()
+    }
+
+    func didFailToLoadData(with error: Error) {
+        showError(message: error.localizedDescription)
+    }
     
     // MARK: - Actions
     
@@ -124,14 +142,10 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     /// - Parameter model: Модель вопроса
     /// - Returns: ViewModel для отображения вопроса в UI
     private func convert(model: QuizQuestion) -> QuizStepViewModel {
-        
-        let questionStep = QuizStepViewModel(
-            image: UIImage(named: model.imageName) ?? UIImage(),
+        QuizStepViewModel(
+            image: UIImage(data: model.imageData) ?? UIImage(),
             question: model.text,
-            questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)"
-        )
-        
-        return questionStep
+            questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)")
     }
     
     /// Показывает экран вопроса на основе `QuizStepViewModel`
@@ -253,6 +267,34 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     /// Запрашивает следующий вопрос у фабрики
     private func requestNextQuestion() {
+        showLoadingIndicator()
         questionFactory?.requestNextQuestion()
+    }
+    
+    /// Показывает индикиатор загрузки
+    private func showLoadingIndicator() {
+        activityIndicator.startAnimating()
+    }
+    
+    /// Скрывает индикатор загрузки
+    private func hideLoadingIndicator() {
+        activityIndicator.stopAnimating()
+    }
+    
+    private func showError(message: String) {
+        hideLoadingIndicator()
+        
+        let model = AlertModel(
+            title: "Что-то пошло не так(",
+            message: message,
+            buttonText: "Попробовать ещё раз"
+        ) { [weak self] in
+            guard let self else { return }
+            
+            self.showLoadingIndicator()
+            questionFactory?.loadData()
+        }
+        
+        alertPresenter.show(in: self, model: model)
     }
 }

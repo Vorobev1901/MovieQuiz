@@ -10,7 +10,7 @@ import Foundation
 /// Модель вопроса квиза
 struct QuizQuestion {
     /// Имя картинки с постером фильма
-    let imageName: String
+    let imageData: Data
     /// Текст вопроса
     let text: String
     /// Правильный ответ на вопрос

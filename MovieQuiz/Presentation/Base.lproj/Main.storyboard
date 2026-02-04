@@ -96,19 +96,25 @@
                                     <constraint firstItem="C74-b2-uQ6" firstAttribute="leading" secondItem="dwJ-YG-1OH" secondAttribute="leading" id="fjs-mA-InA"/>
                                 </constraints>
                             </stackView>
+                            <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="medium" translatesAutoresizingMaskIntoConstraints="NO" id="xEc-Cz-anA">
+                                <rect key="frame" x="197" y="438" width="20" height="20"/>
+                            </activityIndicatorView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" name="YP Black"/>
                         <constraints>
+                            <constraint firstItem="xEc-Cz-anA" firstAttribute="centerY" secondItem="8bC-Xf-vdC" secondAttribute="centerY" id="99I-Mk-zca"/>
                             <constraint firstItem="dwJ-YG-1OH" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="10" id="GYp-aP-xqU"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="bottom" secondItem="dwJ-YG-1OH" secondAttribute="bottom" id="LPl-8v-iqE"/>
                             <constraint firstItem="dwJ-YG-1OH" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" constant="20" id="i5z-Nt-2wZ"/>
+                            <constraint firstItem="xEc-Cz-anA" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="qhY-Nq-zLe"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="dwJ-YG-1OH" secondAttribute="trailing" constant="20" id="vga-Q6-RMg"/>
                         </constraints>
                     </view>
                     <nil key="simulatedTopBarMetrics"/>
                     <nil key="simulatedBottomBarMetrics"/>
                     <connections>
+                        <outlet property="activityIndicator" destination="xEc-Cz-anA" id="INR-3X-xLu"/>
                         <outlet property="counterLabel" destination="HIo-p7-4QP" id="PbI-Mk-3wn"/>
                         <outlet property="imageView" destination="C74-b2-uQ6" id="Prx-Oo-V7x"/>
                         <outlet property="noButton" destination="QXV-6z-EFx" id="2e4-96-KPf"/>
