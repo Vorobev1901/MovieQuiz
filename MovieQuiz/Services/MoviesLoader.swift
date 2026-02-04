@@ -13,8 +13,23 @@ protocol MoviesLoading {
 
 struct MoviesLoader: MoviesLoading {
     
+    enum MoviesLoaderError: LocalizedError {
+        case api(String)
+        case emptyItems
+        
+        var errorDescription: String? {
+            switch self {
+            case .api(let message):
+                return message
+            case .emptyItems:
+                return "Не удалось загрузить фильмы. Попробуйте позже."
+            }
+        }
+    }
+    
     // MARK: - NetworkClient
     private let networkClient: NetworkRouting
+    private let decoder = JSONDecoder()
     
     init(networkClient: NetworkRouting = NetworkClient()) {
         self.networkClient = networkClient
@@ -34,8 +49,23 @@ struct MoviesLoader: MoviesLoading {
             switch result {
             case .success(let data):
                 do {
-                    let movies = try JSONDecoder().decode(MostPopularMovies.self, from: data)
-                    handler(.success(movies))
+                    let response = try self.decoder.decode(MostPopularMovies.self, from: data)
+                    
+                    // 🔴 ВОТ ОНА — ГЛАВНАЯ ПРОВЕРКА
+                    if !response.errorMessage.isEmpty {
+                        handler(.failure(
+                            MoviesLoaderError.api(response.errorMessage)
+                        ))
+                        return
+                    }
+                    
+                    // (опционально, но полезно)
+                    if response.items.isEmpty {
+                        handler(.failure(MoviesLoaderError.emptyItems))
+                        return
+                    }
+                    
+                    handler(.success(response))
                 } catch {
                     handler(.failure(error))
                 }

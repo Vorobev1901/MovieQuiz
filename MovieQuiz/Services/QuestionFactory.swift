@@ -9,7 +9,7 @@ import Foundation
 
 // Класс, отвечающий за генерацию и предоставление вопросов для квиза
 // Делегат получает следующий вопрос, когда он запрашивается
-class QuestionFactory: QuestionFactoryProtocol {
+final class QuestionFactory: QuestionFactoryProtocol {
     
     private let moviesLoader: MoviesLoading
     
@@ -83,10 +83,12 @@ class QuestionFactory: QuestionFactoryProtocol {
             
             let rating = Float(movie.rating) ?? 0
             
-            let text = "Рейтинг этого фильма больше чем 7?"
-            let correctAnswer = rating > 7
-            
-            let question = QuizQuestion(image: imageData,
+            let ratingThreshold = Float.random(in: 5.0...9.0)
+            let comparison = Bool.random() ? "больше" : "меньше"
+            let correctAnswer = comparison == "больше" ? rating > ratingThreshold : rating < ratingThreshold
+            let text = "Рейтинг этого фильма \(comparison) чем \(String(format: "%.1f", ratingThreshold))?"
+
+            let question = QuizQuestion(imageData: imageData,
                                         text: text,
                                         correctAnswer: correctAnswer)
             
