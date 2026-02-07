@@ -10,7 +10,12 @@ import UIKit
 final class MovieQuizPresenter {
     
     let questionsAmount: Int = 10
+    
     private var currentQuestionIndex: Int = 0
+    
+    var currentQuestion: QuizQuestion?
+    
+    weak var viewController: MovieQuizViewController?
     
     func isLastQuestion() -> Bool {
         currentQuestionIndex == questionsAmount - 1
@@ -24,6 +29,25 @@ final class MovieQuizPresenter {
         currentQuestionIndex += 1
     }
     
+    func noButtonClicked() {
+        guard let currentQuestion = currentQuestion else {
+            return
+        }
+        
+        // Проверяем ответ: "Нет" правильный, если текущий вопрос имеет correctAnswer == false
+        viewController?.showAnswerResult(isCorrect: !currentQuestion.correctAnswer)
+    }
+    
+    func yesButtonClicked() {
+        guard let currentQuestion = currentQuestion else {
+            return
+        }
+        
+        // Проверяем ответ: "Да" правильный, если текущий вопрос имеет correctAnswer == true
+        viewController?.showAnswerResult(isCorrect: currentQuestion.correctAnswer)
+    }
+    
+    /// Конвертирует модель QuizQuestion в QuizStepViewModel
     func convert(model: QuizQuestion) -> QuizStepViewModel {
         QuizStepViewModel(
             image: model.imageData,

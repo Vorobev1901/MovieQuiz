@@ -39,9 +39,6 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     /// Отвечает за показ алертов
     private var alertPresenter = AlertPresenter()
     
-    /// Текущий вопрос
-    private var currentQuestion: QuizQuestion?
-    
     private let presenter = MovieQuizPresenter()
     
     // MARK: - Lifecycle
@@ -77,6 +74,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
             delegate: self
         )
         
+        presenter.viewController = self
         statisticService = StatisticService()
     }
     
@@ -91,7 +89,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     func didReceiveNextQuestion(question: QuizQuestion?) {
         guard let question = question else { return }
         
-        currentQuestion = question
+        presenter.currentQuestion = question
         let viewModel = presenter.convert(model: question)
         
         // Обновление UI на главном потоке
@@ -114,36 +112,16 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     // MARK: - Actions
     
     @IBAction private func noButtonClicked(_ sender: UIButton) {
-        guard let currentQuestion = currentQuestion else {
-            return
-        }
-        
-        // Проверяем ответ: "Нет" правильный, если текущий вопрос имеет correctAnswer == false
-        showAnswerResult(isCorrect: !currentQuestion.correctAnswer)
+        presenter.noButtonClicked()
     }
     
     @IBAction private func yesButtonClicked(_ sender: UIButton) {
-        guard let currentQuestion = currentQuestion else {
-            return
-        }
-        
-        // Проверяем ответ: "Да" правильный, если текущий вопрос имеет correctAnswer == true
-        showAnswerResult(isCorrect: currentQuestion.correctAnswer)
+        presenter.yesButtonClicked()
     }
     
     
     // MARK: - Private Methods
-    
-    /// Конвертирует модель QuizQuestion в QuizStepViewModel
-    /// - Parameter model: Модель вопроса
-    /// - Returns: ViewModel для отображения вопроса в UI
-//    private func convert(model: QuizQuestion) -> QuizStepViewModel {
-//        QuizStepViewModel(
-//            image: UIImage(data: model.imageData) ?? UIImage(),
-//            question: model.text,
-//            questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)")
-//    }
-    
+ 
     /// Показывает экран вопроса на основе `QuizStepViewModel`
     ///
     /// Используется для отображения текущего вопроса:
@@ -189,7 +167,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     /// Обрабатывает ответ пользователя и показывает результат
     /// - Parameter isCorrect: true, если ответ правильный, иначе false
-    private func showAnswerResult(isCorrect: Bool) {
+    func showAnswerResult(isCorrect: Bool) {
         // Показываем рамку: зеленая для правильного, красная для неправильного
         imageView.layer.borderWidth = 8
         imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
