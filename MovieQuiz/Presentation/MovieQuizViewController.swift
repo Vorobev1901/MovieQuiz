@@ -3,6 +3,7 @@ import UIKit
 
 final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
+    
     // MARK: - Outlets
     
     /// Показывает номер текущего вопроса
@@ -26,14 +27,8 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     // MARK: - Private properties
     
-    /// Индекс текущего вопроса
-    private var currentQuestionIndex = 0
-    
     /// Счётчик правильных ответов в раунде
     private var correctAnswers = 0
-    
-    /// Общее количество вопросов в раунде
-    private var questionsAmount: Int = 10
     
     /// Фабрика вопросов
     private var questionFactory: QuestionFactoryProtocol?
@@ -47,6 +42,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     /// Текущий вопрос
     private var currentQuestion: QuizQuestion?
     
+    private let presenter = MovieQuizPresenter()
     
     // MARK: - Lifecycle
     
@@ -96,7 +92,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         guard let question = question else { return }
         
         currentQuestion = question
-        let viewModel = convert(model: question)
+        let viewModel = presenter.convert(model: question)
         
         // Обновление UI на главном потоке
         DispatchQueue.main.async { [weak self] in
@@ -141,12 +137,12 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     /// Конвертирует модель QuizQuestion в QuizStepViewModel
     /// - Parameter model: Модель вопроса
     /// - Returns: ViewModel для отображения вопроса в UI
-    private func convert(model: QuizQuestion) -> QuizStepViewModel {
-        QuizStepViewModel(
-            image: UIImage(data: model.imageData) ?? UIImage(),
-            question: model.text,
-            questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)")
-    }
+//    private func convert(model: QuizQuestion) -> QuizStepViewModel {
+//        QuizStepViewModel(
+//            image: UIImage(data: model.imageData) ?? UIImage(),
+//            question: model.text,
+//            questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)")
+//    }
     
     /// Показывает экран вопроса на основе `QuizStepViewModel`
     ///
@@ -158,10 +154,11 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     private func show(quiz step: QuizStepViewModel) {
         counterLabel.text = step.questionNumber
         textLabel.text = step.question
-        imageView.image = step.image
+        imageView.image = UIImage(data: step.image) ?? UIImage()
         
         // Сбрасываем рамку у картинки
-        imageView.layer.borderWidth = 0
+//        imageView.layer.borderWidth = 0
+        imageView.layer.borderColor = UIColor.clear.cgColor
         
         // Включаем кнопки для следующего ответа
         yesButton.isEnabled = true
@@ -215,9 +212,8 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     /// Определяет: показываем следующий вопрос или результат квиза
     private func showNextQuestionOrResults() {
-        let isLastQuestion = currentQuestionIndex == questionsAmount - 1
         
-        if isLastQuestion {
+        if presenter.isLastQuestion() {
             showResults()
         } else {
             showNextQuestion()
@@ -232,7 +228,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         
         // Формируем текст для алерта
         let text = """
-            Ваш результат: \(correctAnswers)/\(questionsAmount)
+            Ваш результат: \(correctAnswers)/\(presenter.questionsAmount)
             Количество сыгранных квизов: \(statisticService.gamesCount)
             Рекорд: \(statisticService.bestGame.correct)/\(statisticService.bestGame.total) (\(statisticService.bestGame.date.dateTimeString))
             Средняя точность: \(String(format: "%.2f", statisticService.totalAccuracy))%
@@ -248,21 +244,21 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     /// Запрашивает следующий вопрос
     private func showNextQuestion() {
-        currentQuestionIndex += 1
+        presenter.switchToNextQuestion()
         requestNextQuestion()
     }
     
     /// Сброс состояния раунда
     private func resetGame() {
-        self.currentQuestionIndex = 0
-        self.correctAnswers = 0
+        presenter.resetQuestionIndex()
+        correctAnswers = 0
     }
     
     /// Завершаем игру и сохраняем результаты текущего раунда
     private func finishGame() {
         guard let statisticService else { return }
         
-        statisticService.store(correct: correctAnswers, total: questionsAmount)
+        statisticService.store(correct: correctAnswers, total: presenter.questionsAmount)
     }
     
     /// Запрашивает следующий вопрос у фабрики

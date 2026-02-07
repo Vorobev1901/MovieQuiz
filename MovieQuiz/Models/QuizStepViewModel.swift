@@ -11,7 +11,7 @@ import UIKit
 /// ViewModel для отображения одного шага квиза
 struct QuizStepViewModel {
     /// Картинка с афишей фильма
-    let image: UIImage
+    let image: Data
     /// Вопрос квиза
     let question: String
     /// Строка с порядковым номером вопроса (например, "1/10")
