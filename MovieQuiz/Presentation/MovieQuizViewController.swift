@@ -59,7 +59,7 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
     func show(quiz step: QuizStepViewModel) {
         counterLabel.text = step.questionNumber
         textLabel.text = step.question
-        imageView.image = UIImage(data: step.image) ?? UIImage()
+        imageView.image = UIImage(data: step.imageData) ?? UIImage()
         imageView.layer.borderColor = UIColor.clear.cgColor
 
         setButtonsEnabled(true)

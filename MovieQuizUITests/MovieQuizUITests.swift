@@ -7,7 +7,7 @@
 
 import XCTest
 
-class MovieQuizUITests: XCTestCase {
+final class MovieQuizUITests: XCTestCase {
     // swiftlint:disable:next implicitly_unwrapped_optional
     var app: XCUIApplication!
     
@@ -30,72 +30,148 @@ class MovieQuizUITests: XCTestCase {
     }
     
     func testYesButton() {
-        sleep(10)
+
+        let poster = app.images["Poster"]
+        // 1. Ждём первый постер
+        XCTAssertTrue(
+            poster.waitForExistence(timeout: 10),
+            "Poster did not appear"
+        )
         
-        let firstPoster = app.images["Poster"]
-        let firstPosterData = firstPoster.screenshot().pngRepresentation
+        let firstPosterData = poster.screenshot().pngRepresentation
         
         app.buttons["Yes"].tap()
-        sleep(3)
         
-        let secondPoster = app.images["Poster"]
-        let secondPosterData = secondPoster.screenshot().pngRepresentation
+        // 2. Ждём обновления постера (например, другой вопрос)
+        let predicate = NSPredicate { _, _ in
+            poster.screenshot().pngRepresentation != firstPosterData
+        }
         
-        XCTAssertNotEqual(firstPosterData, secondPosterData)
+        expectation(for: predicate, evaluatedWith: poster)
+        waitForExpectations(timeout: 10)
+        
+        let newPosterData = poster.screenshot().pngRepresentation
+        XCTAssertNotEqual(firstPosterData, newPosterData, "Poster did not change after tapping Yes")
         
         let indexLabel = app.staticTexts["Index"]
         
-        XCTAssertEqual(indexLabel.label, "2/10")
+        let oldIndexLabel = indexLabel.label
+        
+        let indexPredicate = NSPredicate(
+            format: "label != %@",
+            oldIndexLabel
+        )
+        
+        expectation(for: indexPredicate, evaluatedWith: indexLabel)
+        waitForExpectations(timeout: 10)
+        
+        XCTAssertEqual(indexLabel.label, "2/10", "Question index did not update")
     }
     
     func testsNoButton() {
-        sleep(10)
-        
-        let firstPoster = app.images["Poster"]
-        let firstPosterData = firstPoster.screenshot().pngRepresentation
-        
-        app.buttons["No"].tap()
-        sleep(3)
-        
-        let secondPoster = app.images["Poster"]
-        let secondPosterData = secondPoster.screenshot().pngRepresentation
-        
-        XCTAssertNotEqual(firstPosterData, secondPosterData)
-        
+        let poster = app.images["Poster"]
         let indexLabel = app.staticTexts["Index"]
         
-        XCTAssertEqual(indexLabel.label, "2/10")
+        XCTAssertTrue(
+            poster.waitForExistence(timeout: 10),
+            "Poster did not appear"
+        )
+        
+        let firstPosterData = poster.screenshot().pngRepresentation
+        
+        app.buttons["No"].tap()
+        
+        let predicate = NSPredicate { _, _ in
+            poster.screenshot().pngRepresentation != firstPosterData
+        }
+        
+        expectation(for: predicate, evaluatedWith: poster)
+        waitForExpectations(timeout: 10)
+        
+        let newPosterData = poster.screenshot().pngRepresentation
+        XCTAssertNotEqual(firstPosterData, newPosterData, "Poster did not change after tapping No")
+        
+        let oldIndexLabel = indexLabel.label
+        
+        let indexPredicate = NSPredicate(
+            format: "label != %@",
+            oldIndexLabel
+        )
+        
+        expectation(for: indexPredicate, evaluatedWith: indexLabel)
+        waitForExpectations(timeout: 10)
+        
+        XCTAssertEqual(indexLabel.label, "2/10", "Question index did not update")
     }
     
     func testGameFinish() {
-        sleep(10)
-        for _ in 1...10 {
+        
+        let indexLabel = app.staticTexts["Index"]
+            
+        // Ждём, пока первый индекс появится
+        XCTAssertTrue(
+            indexLabel.waitForExistence(timeout: 10),
+            "Index label did not appear"
+        )
+        
+        for questionNumber in 1...10 {
+            // Нажимаем кнопку "No"
             app.buttons["No"].tap()
-            sleep(5)
+            
+            if questionNumber < 10 {
+                // Для первых 9 кликов ждём обновления индекса
+                let expectedIndex = "\(questionNumber + 1)/10"
+                let indexPredicate = NSPredicate(format: "label == %@", expectedIndex)
+                expectation(for: indexPredicate, evaluatedWith: indexLabel)
+                waitForExpectations(timeout: 10)
+                
+                XCTAssertEqual(indexLabel.label, expectedIndex)
+            }
         }
 
+        // Проверяем финальный алерт
         let alert = app.alerts["Этот раунд окончен!"]
-        
-        XCTAssertTrue(alert.exists)
-        XCTAssertTrue(alert.label == "Этот раунд окончен!")
-        XCTAssertTrue(alert.buttons.firstMatch.label == "Сыграть ещё раз")
+        XCTAssertTrue(alert.waitForExistence(timeout: 5), "Finish alert did not appear")
+        XCTAssertEqual(alert.label, "Этот раунд окончен!")
+        XCTAssertEqual(alert.buttons.firstMatch.label, "Сыграть ещё раз")
     }
 
     func testAlertDismiss() {
-        sleep(10)
-        for _ in 1...10 {
+        let indexLabel = app.staticTexts["Index"]
+            
+        // Ждём, пока первый индекс появится
+        XCTAssertTrue(
+            indexLabel.waitForExistence(timeout: 10),
+            "Index label did not appear"
+        )
+        
+        for questionNumber in 1...10 {
+            // Нажимаем кнопку "No"
             app.buttons["No"].tap()
-            sleep(5)
+            
+            if questionNumber < 10 {
+                // Для первых 9 кликов ждём обновления индекса
+                let expectedIndex = "\(questionNumber + 1)/10"
+                let indexPredicate = NSPredicate(format: "label == %@", expectedIndex)
+                expectation(for: indexPredicate, evaluatedWith: indexLabel)
+                waitForExpectations(timeout: 10)
+                
+                XCTAssertEqual(indexLabel.label, expectedIndex)
+            }
         }
         
+        // Проверяем финальный алерт
         let alert = app.alerts["Этот раунд окончен!"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5), "Finish alert did not appear")
+        
         alert.buttons.firstMatch.tap()
         
-        sleep(5)
+        // Ждём, пока индекс обновится на "1/10"
+        let resetIndexPredicate = NSPredicate(format: "label == %@", "1/10")
+        expectation(for: resetIndexPredicate, evaluatedWith: indexLabel)
+        waitForExpectations(timeout: 5)
         
-        let indexLabel = app.staticTexts["Index"]
-        
-        XCTAssertFalse(alert.exists)
-        XCTAssertTrue(indexLabel.label == "1/10")
+        XCTAssertFalse(alert.exists, "Alert still exists after tapping button")
+        XCTAssertEqual(indexLabel.label, "1/10", "Index did not reset after dismissing alert")
     }
 }

@@ -9,7 +9,7 @@ import Foundation
 
 final class MovieQuizPresenter: QuestionFactoryDelegate {
     
-    private let statisticService: StatisticServiceProtocol!
+    private let statisticService: StatisticServiceProtocol?
     private var questionFactory: QuestionFactoryProtocol?
     private weak var viewController: MovieQuizViewControllerProtocol?
     
@@ -41,8 +41,7 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         let viewModel = convert(model: question)
         
         // Обновление UI на главном потоке
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
+        DispatchQueue.main.async {
             self.viewController?.hideLoadingIndicator()
             self.viewController?.show(quiz: viewModel)
         }
@@ -107,9 +106,7 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
     }
     
     private func didAnswer(isYes: Bool) {
-        guard let currentQuestion = currentQuestion else {
-            return
-        }
+        guard let currentQuestion else { return }
         
         let givenAnswer = isYes
         
@@ -126,9 +123,10 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
     /// Конвертирует модель QuizQuestion в QuizStepViewModel
     func convert(model: QuizQuestion) -> QuizStepViewModel {
         QuizStepViewModel(
-            image: model.imageData,
+            imageData: model.imageData,
             question: model.text,
-            questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)")
+            questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)"
+        )
     }
     
     /// Обрабатывает ответ пользователя и показывает результат
@@ -143,7 +141,7 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         
         // Переход к следующему вопросу через 1 секунду
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            guard let self = self else { return }
+            guard let self else { return }
 
             self.proceedToNextQuestionOrResults()
         }
@@ -170,6 +168,8 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
     }
     
     func makeResultsMessage() -> String {
+        guard let statisticService else { return "" }
+        
         statisticService.store(correct: correctAnswers, total: questionsAmount)
         
         let bestGame = statisticService.bestGame
